@@ -644,7 +644,7 @@ contract EPNSCoreV1 is VersionedInitializable, ReentrancyGuard  {
     }
 
     /// @dev for delegates of a channel to send notification
-    function sendNotificationOverrideChannel(
+    function sendNotificationAsDelegates(
         address _channel,
         address _recipient,
         bytes calldata _identity
