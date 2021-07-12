@@ -122,7 +122,7 @@ describe("EPNSStagingV4 tests", function () {
 
 
  describe("Testing subscribe realted functions", function(){
-        /**
+    /**
      * "subscribe" Function CHECKPOINTS
      *  Should only be called for Activated Channels
      * Should revert if an already Subscribed user calls the function
@@ -132,103 +132,103 @@ describe("EPNSStagingV4 tests", function () {
      * Should update the FAIRSHARE COUNTS
     //  */
 
-  //   describe("Testing the Base SUBSCRIBE Function", function(){
-  //     const CHANNEL_TYPE = 2;
-  //     const testChannel = ethers.utils.toUtf8Bytes("test-channel-hello-world");
+    describe("Testing the Base SUBSCRIBE Function", function(){
+      const CHANNEL_TYPE = 2;
+      const testChannel = ethers.utils.toUtf8Bytes("test-channel-hello-world");
 
-  //     beforeEach(async function(){
+      beforeEach(async function(){
 
-  //       await MOCKDAI.connect(CHANNEL_CREATORSIGNER).mint(ADD_CHANNEL_MIN_POOL_CONTRIBUTION);
-  //       await MOCKDAI.connect(CHANNEL_CREATORSIGNER).approve(EPNSCoreV1Proxy.address, ADD_CHANNEL_MIN_POOL_CONTRIBUTION);
-  //       await EPNSCoreV1Proxy.connect(CHANNEL_CREATORSIGNER).createChannelWithFees(CHANNEL_TYPE, testChannel, ADD_CHANNEL_MIN_POOL_CONTRIBUTION);
+        await MOCKDAI.connect(CHANNEL_CREATORSIGNER).mint(ADD_CHANNEL_MIN_POOL_CONTRIBUTION);
+        await MOCKDAI.connect(CHANNEL_CREATORSIGNER).approve(EPNSCoreV1Proxy.address, ADD_CHANNEL_MIN_POOL_CONTRIBUTION);
+        await EPNSCoreV1Proxy.connect(CHANNEL_CREATORSIGNER).createChannelWithFees(CHANNEL_TYPE, testChannel, ADD_CHANNEL_MIN_POOL_CONTRIBUTION);
 
-  //       await MOCKDAI.connect(CHANNEL_CREATORSIGNER).mint(DELEGATED_CONTRACT_FEES);
-  //       await MOCKDAI.connect(CHANNEL_CREATORSIGNER).approve(EPNSCoreV1Proxy.address, DELEGATED_CONTRACT_FEES);
-  //     })
+        await MOCKDAI.connect(CHANNEL_CREATORSIGNER).mint(DELEGATED_CONTRACT_FEES);
+        await MOCKDAI.connect(CHANNEL_CREATORSIGNER).approve(EPNSCoreV1Proxy.address, DELEGATED_CONTRACT_FEES);
+      })
 
-  //     it("User should be able to subscribe ONLY if Channel Is Activated", async ()=>{
-  //         const tx = EPNSCoreV1Proxy.connect(BOBSIGNER).subscribe(ALICE);
-  //         await expect(tx).to.be.revertedWith("Channel deactivated or doesn't exists");
-  //     })
+      it("User should be able to subscribe ONLY if Channel Is Activated", async ()=>{
+          const tx = EPNSCoreV1Proxy.connect(BOBSIGNER).subscribe(ALICE);
+          await expect(tx).to.be.revertedWith("Channel deactivated or doesn't exists");
+      })
 
-  //      it("Function should revert if user already subscribed", async function () {
-  //       await EPNSCoreV1Proxy.connect(BOBSIGNER).subscribe(CHANNEL_CREATOR);
-  //       const tx = EPNSCoreV1Proxy.connect(CHANNEL_CREATORSIGNER).subscribe(CHANNEL_CREATOR);
+       it("Function should revert if user already subscribed", async function () {
+        await EPNSCoreV1Proxy.connect(BOBSIGNER).subscribe(CHANNEL_CREATOR);
+        const tx = EPNSCoreV1Proxy.connect(CHANNEL_CREATORSIGNER).subscribe(CHANNEL_CREATOR);
 
-  //       await expect(tx).to.be.revertedWith("Subscriber already Exists");
-  //     });
+        await expect(tx).to.be.revertedWith("Subscriber already Exists");
+      });
 
-  //     it("Should Add User in the Ecosystem if they aren't added already", async function () {
-  //         const userDetails = await EPNSCoreV1Proxy.users(BOB);
-  //         const userActivatedBefore = userDetails[0];
-  //         const totalUsers_before = await EPNSCoreV1Proxy.usersCount();
+      it("Should Add User in the Ecosystem if they aren't added already", async function () {
+          const userDetails = await EPNSCoreV1Proxy.users(BOB);
+          const userActivatedBefore = userDetails[0];
+          const totalUsers_before = await EPNSCoreV1Proxy.usersCount();
 
-  //         await EPNSCoreV1Proxy.connect(BOBSIGNER).subscribe(CHANNEL_CREATOR);
-  //         const userDetails_after = await EPNSCoreV1Proxy.users(BOB);
-  //         const userActivatedAfter= userDetails_after[0];
-  //         const totalUsers_after =  await EPNSCoreV1Proxy.usersCount();
-
-
-  //         expect(userActivatedBefore).to.be.equals(false);
-  //         expect(userActivatedAfter).to.be.equals(true);
-  //         expect(totalUsers_before).to.equal(3);
-  //         expect(totalUsers_after).to.equal(4);
-  //     });
-
-  //     it("Should Update the User & Channel Subscription Details on the Contract", async ()=>{
-  //         const userDetails = await EPNSCoreV1Proxy.users(BOB);
-  //         const channelDetails = await EPNSCoreV1Proxy.channels(CHANNEL_CREATOR);
-
-  //         const userSubscribeCount_before = userDetails[4];
-  //         const channelMemberCount_before = channelDetails[3];
-
-  //         const tx =  await EPNSCoreV1Proxy.connect(BOBSIGNER).subscribe(CHANNEL_CREATOR);
-
-  //         const userDetails_after = await EPNSCoreV1Proxy.users(BOB);
-  //         const channelDetails_after = await EPNSCoreV1Proxy.channels(CHANNEL_CREATOR);
-  //         const channelMemberCount_after = channelDetails_after[3];
-
-  //         const userSubscribeCount_after = userDetails_after[4];
-  //         const memberExists = await EPNSCoreV1Proxy.memberExists(BOB,CHANNEL_CREATOR);
-
-  //         expect(memberExists).to.be.equals(true);
-  //         expect(userSubscribeCount_before).to.equal(0);
-  //         expect(userSubscribeCount_after).to.equal(1);
-  //         expect(channelMemberCount_before).to.equal(1);
-  //         expect(channelMemberCount_after).to.equal(2);
-  //         await expect(tx).to.emit(EPNSCoreV1Proxy,'Subscribe')
-  //         .withArgs(CHANNEL_CREATOR,BOB)
-  //     })
+          await EPNSCoreV1Proxy.connect(BOBSIGNER).subscribe(CHANNEL_CREATOR);
+          const userDetails_after = await EPNSCoreV1Proxy.users(BOB);
+          const userActivatedAfter= userDetails_after[0];
+          const totalUsers_after =  await EPNSCoreV1Proxy.usersCount();
 
 
-  //     it("Should update the FAIR SHARE RATIO", async ()=>{
-  //       const channel = await EPNSCoreV1Proxy.channels(CHANNEL_CREATOR);
+          expect(userActivatedBefore).to.be.equals(false);
+          expect(userActivatedAfter).to.be.equals(true);
+          expect(totalUsers_before).to.equal(3);
+          expect(totalUsers_after).to.equal(4);
+      });
 
-  //       const _channelFairShareCount = channel.channelFairShareCount;
-  //       const _channelHistoricalZ = channel.channelHistoricalZ;
-  //       const _channelLastUpdate = channel.channelLastUpdate;
+      it("Should Update the User & Channel Subscription Details on the Contract", async ()=>{
+          const userDetails = await EPNSCoreV1Proxy.users(BOB);
+          const channelDetails = await EPNSCoreV1Proxy.channels(CHANNEL_CREATOR);
 
-  //       const tx = await EPNSCoreV1Proxy.connect(BOBSIGNER).subscribe(CHANNEL_CREATOR);
-  //       const blockNumber = tx.blockNumber;
+          const userSubscribeCount_before = userDetails[4];
+          const channelMemberCount_before = channelDetails[3];
 
-  //       const {
-  //         channelNewFairShareCount,
-  //         channelNewHistoricalZ,
-  //         channelNewLastUpdate,
-  //       } = readjustFairShareOfSubscribers(SubscriberAction.SubscriberAdded, _channelFairShareCount, _channelHistoricalZ, _channelLastUpdate, bn(blockNumber));
+          const tx =  await EPNSCoreV1Proxy.connect(BOBSIGNER).subscribe(CHANNEL_CREATOR);
 
-  //       const channelNew = await EPNSCoreV1Proxy.channels(CHANNEL_CREATOR);
+          const userDetails_after = await EPNSCoreV1Proxy.users(BOB);
+          const channelDetails_after = await EPNSCoreV1Proxy.channels(CHANNEL_CREATOR);
+          const channelMemberCount_after = channelDetails_after[3];
 
-  //       const _channelNewFairShareCountNew = channelNew.channelFairShareCount;
-  //       const _channelHistoricalZNew = channelNew.channelHistoricalZ;
-  //       const _channelLastUpdateNew = channelNew.channelLastUpdate;
+          const userSubscribeCount_after = userDetails_after[4];
+          const memberExists = await EPNSCoreV1Proxy.memberExists(BOB,CHANNEL_CREATOR);
 
-  //       expect(_channelNewFairShareCountNew).to.equal(channelNewFairShareCount);
-  //       expect(_channelHistoricalZNew).to.equal(channelNewHistoricalZ);
-  //       expect(_channelLastUpdateNew).to.equal(channelNewLastUpdate);
-  //     })
+          expect(memberExists).to.be.equals(true);
+          expect(userSubscribeCount_before).to.equal(0);
+          expect(userSubscribeCount_after).to.equal(1);
+          expect(channelMemberCount_before).to.equal(1);
+          expect(channelMemberCount_after).to.equal(2);
+          await expect(tx).to.emit(EPNSCoreV1Proxy,'Subscribe')
+          .withArgs(CHANNEL_CREATOR,BOB)
+      })
 
-  // });
+
+      it("Should update the FAIR SHARE RATIO", async ()=>{
+        const channel = await EPNSCoreV1Proxy.channels(CHANNEL_CREATOR);
+
+        const _channelFairShareCount = channel.channelFairShareCount;
+        const _channelHistoricalZ = channel.channelHistoricalZ;
+        const _channelLastUpdate = channel.channelLastUpdate;
+
+        const tx = await EPNSCoreV1Proxy.connect(BOBSIGNER).subscribe(CHANNEL_CREATOR);
+        const blockNumber = tx.blockNumber;
+
+        const {
+          channelNewFairShareCount,
+          channelNewHistoricalZ,
+          channelNewLastUpdate,
+        } = readjustFairShareOfSubscribers(SubscriberAction.SubscriberAdded, _channelFairShareCount, _channelHistoricalZ, _channelLastUpdate, bn(blockNumber));
+
+        const channelNew = await EPNSCoreV1Proxy.channels(CHANNEL_CREATOR);
+
+        const _channelNewFairShareCountNew = channelNew.channelFairShareCount;
+        const _channelHistoricalZNew = channelNew.channelHistoricalZ;
+        const _channelLastUpdateNew = channelNew.channelLastUpdate;
+
+        expect(_channelNewFairShareCountNew).to.equal(channelNewFairShareCount);
+        expect(_channelHistoricalZNew).to.equal(channelNewHistoricalZ);
+        expect(_channelLastUpdateNew).to.equal(channelNewLastUpdate);
+      })
+
+  });
 
 
    /**
@@ -488,5 +488,277 @@ describe("EPNSStagingV4 tests", function () {
       });
 
     });
-});
+
+    
+  describe('Testing Subscribe with Meta Transaction function', function () {
+    let contractName
+    let spender
+    let transmitter
+    let channelAddress
+    let nonce
+    let deadline
+
+    let domain
+    let types
+    let val
+
+    beforeEach(async function () {
+      contractName = await EPNSCoreV1Proxy.name();
+      const { chainId } = await ethers.provider.getNetwork()
+
+      USER = BOBSIGNER
+      TRANSMITTER = CHARLIESIGNER
+      nonce = await EPNSCoreV1Proxy.nonces(BOB)
+      deadline = ethers.constants.MaxUint256
+
+
+      domain = {
+        name: contractName,
+        chainId: chainId,
+        verifyingContract: EPNSCoreV1Proxy.address.toString()
+      }
+
+      types = {
+        Subscribe: [
+          {name: "channel", type: "address"},
+          {name: "nonce", type: "uint256"},
+          {name: "expiry", type: "uint256"},
+        ]
+      }
+
+      val = {
+        'channel': CHANNEL_CREATOR.toString(),
+        'nonce': nonce.toString(),
+        'expiry': deadline.toString()
+      }
+
+        const CHANNEL_TYPE = 2;
+        const testChannel = ethers.utils.toUtf8Bytes("test-channel-hello-world");
+
+        await MOCKDAI.connect(CHANNEL_CREATORSIGNER).mint(ADD_CHANNEL_MIN_POOL_CONTRIBUTION);
+        await MOCKDAI.connect(CHANNEL_CREATORSIGNER).approve(EPNSCoreV1Proxy.address, ADD_CHANNEL_MIN_POOL_CONTRIBUTION);
+        await EPNSCoreV1Proxy.connect(CHANNEL_CREATORSIGNER).createChannelWithFees(CHANNEL_TYPE, testChannel, ADD_CHANNEL_MIN_POOL_CONTRIBUTION);
+
+        await MOCKDAI.connect(CHANNEL_CREATORSIGNER).mint(DELEGATED_CONTRACT_FEES);
+        await MOCKDAI.connect(CHANNEL_CREATORSIGNER).approve(EPNSCoreV1Proxy.address, DELEGATED_CONTRACT_FEES);
+
+    })
+    
+    it('Function should revert on Unauthorized request', async function () {
+      const signer = BOBSIGNER // owner is 0 and should be the signer
+      const signature = await signer._signTypedData(domain, types, val)
+      let sig = ethers.utils.splitSignature(signature)
+      sig.v = 0
+      sig.r = '0xbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbad0'
+      sig.s = '0xbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbad0'
+
+      await expect(EPNSCoreV1Proxy.connect(TRANSMITTER).subscribeBySignature(CHANNEL_CREATOR, nonce,deadline,sig.v, sig.r, sig.s))
+        .to.be.revertedWith("Invalid signature")
+    })
+
+    it('Function should Abort if Nonce is Invalid', async function () {
+      nonce = await EPNSCoreV1Proxy.nonces(BOB) + 1
+      val['nonce'] = nonce.toString()
+
+      const signer = BOBSIGNER
+      const signature = await signer._signTypedData(domain, types, val)
+      let sig = ethers.utils.splitSignature(signature)
+
+      await expect(EPNSCoreV1Proxy.connect(TRANSMITTER).subscribeBySignature(CHANNEL_CREATOR, nonce,deadline,sig.v, sig.r, sig.s))
+        .to.be.revertedWith('Invalid nonce')
+    })
+
+     it('Function should abort on Deadline expiry', async function () {
+      const now = new Date()
+      const secondsSinceEpoch = Math.round(now.getTime() / 1000)
+
+      deadline = secondsSinceEpoch - 10000
+      val['expiry'] = deadline.toString()
+
+      const signer = BOBSIGNER
+      const signature = await signer._signTypedData(domain, types, val)
+      let sig = ethers.utils.splitSignature(signature)
+
+      await expect(EPNSCoreV1Proxy.connect(TRANSMITTER).subscribeBySignature(CHANNEL_CREATOR, nonce,deadline,sig.v, sig.r, sig.s))
+        .to.be.revertedWith('Signature expired')
+    })
+
+    it('Funuction should execute as expected Deadline is not expired', async function () {
+      const now = new Date()
+      const secondsSinceEpoch = Math.round(now.getTime() / 1000)
+
+      deadline = secondsSinceEpoch + 10000;
+      val['expiry'] = deadline.toString()
+
+      const signer = BOBSIGNER
+      const signature = await signer._signTypedData(domain, types, val)
+      let sig = ethers.utils.splitSignature(signature)
+
+       expect(await EPNSCoreV1Proxy.connect(TRANSMITTER).subscribeBySignature(CHANNEL_CREATOR, nonce,deadline,sig.v, sig.r, sig.s))
+    })
+
+    it("subscribeBySignature function execute and Update Imperative as expected ", async ()=>{
+         const signer = BOBSIGNER // owner is 0 and should be the signer
+        const signature = await signer._signTypedData(domain, types, val)
+        let sig = ethers.utils.splitSignature(signature)
+
+        const tx =  await EPNSCoreV1Proxy.connect(TRANSMITTER).subscribeBySignature(CHANNEL_CREATOR, nonce, deadline, sig.v, sig.r, sig.s);
+
+          const userDetails_after = await EPNSCoreV1Proxy.users(BOB);
+          const channelDetails_after = await EPNSCoreV1Proxy.channels(CHANNEL_CREATOR);
+          const channelMemberCount_after = channelDetails_after[3];
+
+          const userSubscribeCount_after = userDetails_after[4];
+          const memberExists = await EPNSCoreV1Proxy.memberExists(BOB,CHANNEL_CREATOR);
+
+          expect(memberExists).to.be.equals(true);
+          expect(userSubscribeCount_after).to.equal(1);
+          await expect(tx).to.emit(EPNSCoreV1Proxy,'Subscribe')
+          .withArgs(CHANNEL_CREATOR,BOB)
+      })
+
+  })
+
+  
+  describe('Testing Usubscribe with Meta Transaction function', function () {
+    let contractName
+    let spender
+    let transmitter
+    let channelAddress
+    let nonce
+    let deadline
+
+    let domain
+    let types
+    let val
+
+    beforeEach(async function () {
+      contractName = await EPNSCoreV1Proxy.name();
+      const { chainId } = await ethers.provider.getNetwork()
+
+      USER = BOBSIGNER
+      TRANSMITTER = CHARLIESIGNER
+      nonce = await EPNSCoreV1Proxy.nonces(BOB)
+      deadline = ethers.constants.MaxUint256
+
+
+      domain = {
+        name: contractName,
+        chainId: chainId,
+        verifyingContract: EPNSCoreV1Proxy.address.toString()
+      }
+
+      types = {
+        Usubscribe: [
+          {name: "channel", type: "address"},
+          {name: "nonce", type: "uint256"},
+          {name: "expiry", type: "uint256"},
+        ]
+      }
+
+      val = {
+        'channel': CHANNEL_CREATOR.toString(),
+        'nonce': nonce.toString(),
+        'expiry': deadline.toString()
+      }
+
+       const CHANNEL_TYPE = 2;
+        const testChannel = ethers.utils.toUtf8Bytes("test-channel-hello-world");
+
+        await MOCKDAI.connect(CHANNEL_CREATORSIGNER).mint(ADD_CHANNEL_MIN_POOL_CONTRIBUTION);
+        await MOCKDAI.connect(CHANNEL_CREATORSIGNER).approve(EPNSCoreV1Proxy.address, ADD_CHANNEL_MIN_POOL_CONTRIBUTION);
+        await EPNSCoreV1Proxy.connect(CHANNEL_CREATORSIGNER).createChannelWithFees(CHANNEL_TYPE, testChannel, ADD_CHANNEL_MIN_POOL_CONTRIBUTION);
+
+        await MOCKDAI.connect(CHANNEL_CREATORSIGNER).mint(DELEGATED_CONTRACT_FEES);
+        await MOCKDAI.connect(CHANNEL_CREATORSIGNER).approve(EPNSCoreV1Proxy.address, DELEGATED_CONTRACT_FEES);
+
+    })
+    
+
+    it('Function should revert on Unauthorized request', async function () {
+      const signer = BOBSIGNER
+      const signature = await signer._signTypedData(domain, types, val)
+      let sig = ethers.utils.splitSignature(signature)
+      sig.v = 0
+      sig.r = '0xbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbad0'
+      sig.s = '0xbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbad0'
+
+      await expect(EPNSCoreV1Proxy.connect(TRANSMITTER).unsubscribeBySignature(CHANNEL_CREATOR, nonce,deadline,sig.v, sig.r, sig.s))
+        .to.be.revertedWith("Invalid signature")
+    })
+
+    it('Function should abort on invalid nonce', async function () {
+      nonce = await EPNSCoreV1Proxy.nonces(BOB) + 1
+      val['nonce'] = nonce.toString()
+
+      const signer = BOBSIGNER
+      const signature = await signer._signTypedData(domain, types, val)
+      let sig = ethers.utils.splitSignature(signature)
+
+      await expect(EPNSCoreV1Proxy.connect(TRANSMITTER).unsubscribeBySignature(CHANNEL_CREATOR, nonce, deadline, sig.v, sig.r, sig.s))
+        .to.be.revertedWith('Invalid nonce')
+    })
+
+     it('Function should abort on deadline expiry', async function () {
+      await EPNSCoreV1Proxy.connect(BOBSIGNER).subscribe(CHANNEL_CREATOR);
+
+      const now = new Date()
+      const secondsSinceEpoch = Math.round(now.getTime() / 1000)
+
+      deadline = secondsSinceEpoch - 10000
+      val['expiry'] = deadline.toString()
+
+      const signer = BOBSIGNER
+      const signature = await signer._signTypedData(domain, types, val)
+      let sig = ethers.utils.splitSignature(signature)
+
+      await expect(EPNSCoreV1Proxy.connect(TRANSMITTER).unsubscribeBySignature(CHANNEL_CREATOR, nonce, deadline, sig.v, sig.r, sig.s))
+        .to.be.revertedWith('Signature expired')
+    })
+
+    it('Funuction should execute as expected Deadline is not expired', async function () {
+        await EPNSCoreV1Proxy.connect(BOBSIGNER).subscribe(CHANNEL_CREATOR);
+
+      const now = new Date()
+      const secondsSinceEpoch = Math.round(now.getTime() / 1000)
+
+      deadline = secondsSinceEpoch + 10000;
+      val['expiry'] = deadline.toString()
+
+      const signer = BOBSIGNER
+      const signature = await signer._signTypedData(domain, types, val)
+      let sig = ethers.utils.splitSignature(signature)
+
+       expect(await EPNSCoreV1Proxy.connect(TRANSMITTER).unsubscribeBySignature(CHANNEL_CREATOR, nonce,deadline,sig.v, sig.r, sig.s))
+    })
+
+    it("unsubscribeBySignature function execute and Update Imperative as expected ", async ()=>{
+       
+        await EPNSCoreV1Proxy.connect(BOBSIGNER).subscribe(CHANNEL_CREATOR);
+
+      const signer = BOBSIGNER
+      const signature = await signer._signTypedData(domain, types, val)
+      let sig = ethers.utils.splitSignature(signature)
+        // Contract State Before Unsubscribing
+        const isMemberExists_before = await EPNSCoreV1Proxy.memberExists(BOB,CHANNEL_CREATOR);
+        const userBefore = await EPNSCoreV1Proxy.users(BOB);
+        const channelBefore = await EPNSCoreV1Proxy.channels(CHANNEL_CREATOR);
+
+        await EPNSCoreV1Proxy.connect(TRANSMITTER).unsubscribeBySignature(CHANNEL_CREATOR, nonce,deadline,sig.v, sig.r, sig.s)
+
+        // Contract State After Unsubscribing
+
+        const userAfter = await EPNSCoreV1Proxy.users(BOB);
+        const channelAfter = await EPNSCoreV1Proxy.channels(CHANNEL_CREATOR);
+        const isMemberExists_after = await EPNSCoreV1Proxy.memberExists(BOB,CHANNEL_CREATOR);
+
+        await expect(isMemberExists_before).to.be.equals(true)
+        await expect(isMemberExists_after).to.be.equals(false)
+        expect(userAfter.subscribedCount).to.equal(userBefore.subscribedCount.sub(1))
+        expect(channelAfter.memberCount).to.equal(channelBefore.memberCount.sub(1))
+
+      })
+
+    })
+  });
 });
