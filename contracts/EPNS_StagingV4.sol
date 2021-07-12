@@ -785,7 +785,7 @@ contract EPNSStagingV4 is Initializable, ReentrancyGuard  {
           || channel.channelType == ChannelType.InterestBearingOpen
           || channel.channelType == ChannelType.InterestBearingMutual
         ) {
-            //_withdrawFundsFromPool(ratio);
+            _withdrawFundsFromPool(ratio);
         }
 
         // Emit it
