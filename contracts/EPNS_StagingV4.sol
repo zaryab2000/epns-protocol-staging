@@ -716,14 +716,14 @@ contract EPNSStagingV4 is Initializable, ReentrancyGuard  {
         emit Subscribe(_channel, _user);
     }
 
-    // @dev to unsubscribe from channel
+   // @dev to unsubscribe from channel
     function _unsubscribe(address _channel, address _user) private returns (uint ratio) {
         // Add the channel to gray list so that it can't subscriber the user again as delegated
-        User storage user = users[msg.sender];
+        User storage user = users[_user];
 
         // first get ratio of earning
         ratio = 0;
-        ratio = calcSingleChannelEarnRatio(_channel, msg.sender, block.number);
+        ratio = calcSingleChannelEarnRatio(_channel, _user, block.number);
 
         // Take the fair share out
 
@@ -751,19 +751,19 @@ contract EPNSStagingV4 is Initializable, ReentrancyGuard  {
         Channel storage channel = channels[_channel];
 
         // Set additional flag to false
-        channel.memberExists[msg.sender] = false;
+        channel.memberExists[_user] = false;
 
         // Find the id of the channel and swap it with the last id, use channel.memberCount as index
         // Slack too deep fix
         // address chnMemToSwapAdrr = channel.mapAddressMember[channel.memberCount];
-        // uint chnMemSwapID = channel.members[msg.sender];
+        // uint chnMemSwapID = channel.members[_user];
 
         // swap to last one and then
-        channel.members[channel.mapAddressMember[channel.memberCount]] = channel.members[msg.sender];
-        channel.mapAddressMember[channel.members[msg.sender]] = channel.mapAddressMember[channel.memberCount];
+        channel.members[channel.mapAddressMember[channel.memberCount]] = channel.members[_user];
+        channel.mapAddressMember[channel.members[_user]] = channel.mapAddressMember[channel.memberCount];
 
         // delete the last one and substract
-        delete(channel.members[msg.sender]);
+        delete(channel.members[_user]);
         delete(channel.mapAddressMember[channel.memberCount]);
         channel.memberCount = channel.memberCount.sub(1);
 
@@ -785,11 +785,11 @@ contract EPNSStagingV4 is Initializable, ReentrancyGuard  {
           || channel.channelType == ChannelType.InterestBearingOpen
           || channel.channelType == ChannelType.InterestBearingMutual
         ) {
-            _withdrawFundsFromPool(ratio);
+            //_withdrawFundsFromPool(ratio);
         }
 
         // Emit it
-        emit Unsubscribe(_channel, msg.sender);
+        emit Unsubscribe(_channel, _user);
     }
 
     /* ************** 
