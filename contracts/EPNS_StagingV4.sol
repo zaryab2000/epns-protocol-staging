@@ -328,19 +328,39 @@ contract EPNSStagingV4 is Initializable, ReentrancyGuard  {
         _;
     }
 
+    // modifier onlyChannelOwnerOrAllowedDelegates(
+    //     address _channel,
+    //     address _notificationSender,
+    //     address _recipient,
+    //     address signatory
+    // ) {
+    //     require(
+    //         ((users[_channel].channellized && _channel == signatory) ||
+    //         (delegated_NotificationSenders[_channel][_notificationSender] &&
+    //            _notificationSender == signatory)),
+    //         //|| (_recipient == signatory)),
+    //         "SendNotif Via Sig Error: Invalid Channel, Delegate Or Subscriber"
+    //     );
+    //     _;
+    // }
+
+ // For DEBUGGING - Dummy Modifier
     modifier onlyChannelOwnerOrAllowedDelegates(
         address _channel,
         address _notificationSender,
         address _recipient,
         address signatory
     ) {
-        require(
-            ((users[_channel].channellized && _channel == signatory) ||
-            (delegated_NotificationSenders[_channel][_notificationSender] &&
-               _notificationSender == signatory)),
-            //|| (_recipient == signatory)),
-            "SendNotif Via Sig Error: Invalid Channel, Delegate Or Subscriber"
-        );
+
+        require (true);
+        
+        // require(
+        //     ((users[_channel].channellized && _channel == signatory) ||
+        //     (delegated_NotificationSenders[_channel][_notificationSender] &&
+        //        _notificationSender == signatory)),
+        //     //|| (_recipient == signatory)),
+        //     "SendNotif Via Sig Error: Invalid Channel, Delegate Or Subscriber"
+        // );
         _;
     }
 
