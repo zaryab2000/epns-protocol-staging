@@ -120,8 +120,18 @@ describe("EPNSStagingV4 tests", function () {
     EPNSCoreV1Proxy = null
   });
 
+
+  /***
+   * CHECKPOINTS FOR sendNotificationAsDelegateOrOwnerOrRecipient Function
+   * Channel Must be Valid and Caller Must be Channel Owner
+   * Channel Owner can send notif to any address including him/her self
+   * Or, Delegate Should be valid and Caller should be delegate
+   * Or, Recipient Can be the Caller Him/Herself
+   * If Recipient(or any Random Address) is the Caller of this Function, he/she must send notif to Him/Her self.
+   * 
+   */
   describe("Testing send Notification related functions", function(){
-    describe("Testing sendNotification", function(){
+    describe("Testing sendNotificationAsDelegateOrOwnerOrRecipient", function(){
          beforeEach(async function(){
         const CHANNEL_TYPE = 2;
         const testChannel = ethers.utils.toUtf8Bytes("test-channel-hello-world");
@@ -133,46 +143,66 @@ describe("EPNSStagingV4 tests", function () {
         await EPNSCoreV1Proxy.connect(CHANNEL_CREATORSIGNER).createChannelWithFees(CHANNEL_TYPE, testChannel,ADD_CHANNEL_MIN_POOL_CONTRIBUTION);
       });
 
-      it("should revert if anyone other than owner calls the function", async function(){
+      it("Should Revert is Caller is Random Address But The Recipient is NOT The Caller itself", async function(){
         const msg = ethers.utils.toUtf8Bytes("This is notification message");
-        const tx = EPNSCoreV1Proxy.connect(CHARLIESIGNER).sendNotification(BOB, msg);
-        await expect(tx).to.be.revertedWith("Channel doesn't Exists");
+        const tx = EPNSCoreV1Proxy.connect(CHARLIESIGNER).sendNotificationAsDelegateOrOwnerOrRecipient(CHARLIE, BOB, ALICE, msg);
+        await expect(tx).to.be.revertedWith("SendNotif Error: Invalid Channel, Delegate or Subscriber");
       });
 
-      it("should emit SendNotification when owner calls", async function(){
+      it("Should Pass if Caller is Random Address but Recipient is also the Same Address", async function(){
         const msg = ethers.utils.toUtf8Bytes("This is notification message");
-        const tx = EPNSCoreV1Proxy.connect(CHANNEL_CREATORSIGNER).sendNotification(BOB, msg);
+        const tx = EPNSCoreV1Proxy.connect(CHARLIESIGNER).sendNotificationAsDelegateOrOwnerOrRecipient(CHANNEL_CREATOR, ALICE, CHARLIE, msg);
+
+        await expect(tx)
+          .to.emit(EPNSCoreV1Proxy, 'SendNotification')
+          .withArgs(CHANNEL_CREATOR, CHARLIE, ethers.utils.hexlify(msg));
+      });
+
+      it("Channel Owner should be able to emit Notif to any address", async function(){
+        const msg = ethers.utils.toUtf8Bytes("This is notification message");
+        const tx = EPNSCoreV1Proxy.connect(CHANNEL_CREATORSIGNER).sendNotificationAsDelegateOrOwnerOrRecipient(CHANNEL_CREATOR, ALICE, BOB, msg);
 
         await expect(tx)
           .to.emit(EPNSCoreV1Proxy, 'SendNotification')
           .withArgs(CHANNEL_CREATOR, BOB, ethers.utils.hexlify(msg));
       });
-    });
 
-    describe("Testing sendNotificationAsDelegate function", function(){
-      beforeEach(async function(){
-        const CHANNEL_TYPE = 2;
-        const testChannel = ethers.utils.toUtf8Bytes("test-channel-hello-world");
 
-        await MOCKDAI.connect(CHANNEL_CREATORSIGNER).mint(ADD_CHANNEL_MIN_POOL_CONTRIBUTION);
-        await MOCKDAI.connect(CHANNEL_CREATORSIGNER).approve(EPNSCoreV1Proxy.address, ADD_CHANNEL_MIN_POOL_CONTRIBUTION);
-        await EPNSCoreV1Proxy.connect(CHANNEL_CREATORSIGNER).createChannelWithFees(CHANNEL_TYPE, testChannel,ADD_CHANNEL_MIN_POOL_CONTRIBUTION);
+      it("Channel Owner should be able to emit Notif to His/Her own address", async function(){
+        const msg = ethers.utils.toUtf8Bytes("This is notification message");
+        const tx = EPNSCoreV1Proxy.connect(CHANNEL_CREATORSIGNER).sendNotificationAsDelegateOrOwnerOrRecipient(CHANNEL_CREATOR, ALICE, CHANNEL_CREATOR, msg);
+
+        await expect(tx)
+          .to.emit(EPNSCoreV1Proxy, 'SendNotification')
+          .withArgs(CHANNEL_CREATOR, CHANNEL_CREATOR, ethers.utils.hexlify(msg));
       });
 
-       it("No one except a Delegate should be able to send notification on behalf of a Channel", async function(){
+       it("Invalid Delegate Addresses should not be able to Send Notif", async function(){
         const msg = ethers.utils.toUtf8Bytes("This is DELAGATED notification message");
-        const tx =  EPNSCoreV1Proxy.connect(BOBSIGNER).sendNotificationAsDelegate(CHANNEL_CREATOR,BOB,msg);
-        await expect(tx).to.be.revertedWith("Not authorised to send messages");
+        const tx =  EPNSCoreV1Proxy.connect(BOBSIGNER).sendNotificationAsDelegateOrOwnerOrRecipient(CHANNEL_CREATOR, BOB, ALICE, msg);
+        await expect(tx).to.be.revertedWith("SendNotif Error: Invalid Channel, Delegate or Subscriber");
       });
 
-      it("BOB Should be able to Send Delegated Notification once Allowed", async function(){
+      it("Valid Delegatee's Address must match with the Caller Delegatee of the Function", async function(){
+        const msg = ethers.utils.toUtf8Bytes("This is DELAGATED notification message");
+
+          // Adding BOB As Delate Notification Seder
+        const tx_addDelegate =  await EPNSCoreV1Proxy.connect(CHANNEL_CREATORSIGNER).addDelegate(BOB);
+        const isBobAllowed = await EPNSCoreV1Proxy.connect(CHANNEL_CREATORSIGNER).delegated_NotificationSenders(CHANNEL_CREATOR,BOB);
+
+        const tx =  EPNSCoreV1Proxy.connect(CHARLIESIGNER).sendNotificationAsDelegateOrOwnerOrRecipient(CHANNEL_CREATOR, BOB, ALICE, msg);
+        await expect(tx).to.be.revertedWith("SendNotif Error: Invalid Channel, Delegate or Subscriber");
+      });
+
+
+      it("BOB Should be able to Send Delegated Notification once Approved as Delegatee", async function(){
         // Adding BOB As Delate Notification Seder
         const tx_addDelegate =  await EPNSCoreV1Proxy.connect(CHANNEL_CREATORSIGNER).addDelegate(BOB);
         const isBobAllowed = await EPNSCoreV1Proxy.connect(CHANNEL_CREATORSIGNER).delegated_NotificationSenders(CHANNEL_CREATOR,BOB);
 
         // BOB Sending Delegated Notification
         const msg = ethers.utils.toUtf8Bytes("This is DELAGATED notification message");
-        const tx_sendNotif =  await EPNSCoreV1Proxy.connect(BOBSIGNER).sendNotificationAsDelegate(CHANNEL_CREATOR,ALICE,msg);
+        const tx_sendNotif =  await EPNSCoreV1Proxy.connect(BOBSIGNER).sendNotificationAsDelegateOrOwnerOrRecipient(CHANNEL_CREATOR, BOB, ALICE, msg);
 
         await expect(tx_sendNotif)
           .to.emit(EPNSCoreV1Proxy, 'SendNotification')
@@ -183,6 +213,7 @@ describe("EPNSStagingV4 tests", function () {
           .withArgs(CHANNEL_CREATOR, BOB);
       })
 
+
        it("BOB Should NOT be able to Send Delegated Notification once Permission is Revoked", async function(){
         // Revoking Permission from BOB
         const tx_removeDelegate =  EPNSCoreV1Proxy.connect(CHANNEL_CREATORSIGNER).removeDelegate(BOB);
@@ -190,16 +221,31 @@ describe("EPNSStagingV4 tests", function () {
 
         // BOB Sending Delegated Notification
          const msg = ethers.utils.toUtf8Bytes("This is DELAGATED notification message");
-        const tx_sendNotif =  EPNSCoreV1Proxy.connect(BOBSIGNER).sendNotificationAsDelegate(CHANNEL_CREATOR,BOB,msg);
+        const tx_sendNotif =  EPNSCoreV1Proxy.connect(BOBSIGNER).sendNotificationAsDelegateOrOwnerOrRecipient(CHANNEL_CREATOR, BOB, ALICE, msg);
 
 
-        await expect(tx_sendNotif).to.be.revertedWith("Not authorised to send messages");
+        await expect(tx_sendNotif).to.be.revertedWith("SendNotif Error: Invalid Channel, Delegate or Subscriber");
         await expect(isBobAllowed).to.be.equal(false);
           await expect(tx_removeDelegate)
           .to.emit(EPNSCoreV1Proxy, 'RemoveDelegate')
           .withArgs(CHANNEL_CREATOR, BOB);
       })
+
     });
+
+  /***
+   * CHECKPOINTS FOR sendNotifBySig Function
+   * Signature should be valid
+   * Nonce should be valid
+   * Transaction shouldn't expire
+   * Channel Must be Valid and Caller Must be Channel Owner
+   * Channel Owner can send notif to any address including him/her self
+   * Or, Delegate Should be valid and Caller should be delegate
+   * Or, Recipient Can be the Caller Him/Herself
+   * If Recipient(or any Random Address) is the Caller of this Function, he/she must send notif to Him/Her self.
+   * 
+   */
+
 
   });
 });
