@@ -150,7 +150,11 @@ contract EPNSStagingV4 is Initializable, ReentrancyGuard  {
     bytes32 public constant SUBSCRIBE_TYPEHASH = keccak256("Subscribe(address channel,uint256 nonce,uint256 expiry)");
      /// @notice The EIP-712 typehash for the SUBSCRIBE struct used by the contract
     bytes32 public constant UNSUBSCRIBE_TYPEHASH = keccak256("Unsubscribe(address channel,uint256 nonce,uint256 expiry)");
-
+    /// @notice The EIP-712 typehash for the SEND NOTIFICATION struct used by the contract
+    bytes32 public constant SEND_NOTIFICATION_TYPEHASH =
+        keccak256(
+            "SendNotification(address channel,address delegate,address recipient,bytes identity,uint256 nonce,uint256 expiry)"
+    );
 
     /* ************** 
     
@@ -261,11 +265,6 @@ contract EPNSStagingV4 is Initializable, ReentrancyGuard  {
         _;
     }
 
-    modifier onlyAllowedDelegates(address _channel, address _notificationSender) {
-        require(delegated_NotificationSenders[_channel][_notificationSender], "Not authorised to send messages");
-        _;
-    }
-
     modifier onlyValidUser(address _addr) {
         require(users[_addr].userActivated, "User not activated yet");
         _;
@@ -310,6 +309,38 @@ contract EPNSStagingV4 is Initializable, ReentrancyGuard  {
 
     modifier onlyNonSubscribed(address _channel, address _subscriber) {
         require(!channels[_channel].memberExists[_subscriber], "Subscriber already Exists");
+        _;
+    }
+
+
+    modifier onlyChannelOwnerOrAllowedDelegatesOrSelfRecipients(
+        address _channel,
+        address _notificationSender,
+        address _recipient
+    ) {
+        require(
+            ((users[_channel].channellized && msg.sender == _channel) ||
+            (msg.sender == governance && _channel == 0x0000000000000000000000000000000000000000) ||
+            (delegated_NotificationSenders[_channel][_notificationSender] && msg.sender == _notificationSender) ||
+            (_recipient == msg.sender)),
+            "SendNotif Error: Invalid Channel, Delegate or Subscriber"
+        );
+        _;
+    }
+
+    modifier onlyChannelOwnerOrAllowedDelegates(
+        address _channel,
+        address _notificationSender,
+        address _recipient,
+        address signatory
+    ) {
+        require(
+            ((users[_channel].channellized && _channel == signatory) ||
+            (delegated_NotificationSenders[_channel][_notificationSender] &&
+               _notificationSender == signatory)),
+            //|| (_recipient == signatory)),
+            "SendNotif Via Sig Error: Invalid Channel, Delegate Or Subscriber"
+        );
         _;
     }
 
@@ -792,51 +823,7 @@ contract EPNSStagingV4 is Initializable, ReentrancyGuard  {
         emit Unsubscribe(_channel, _user);
     }
 
-    /* ************** 
-    
-    => SEND NOTIFICATION FUNCTIONALITIES <=
-
-    *************** */
-
-    /// @dev allow other addresses to send notifications using your channel
-    function addDelegate(address _delegate) external onlyChannelOwner(msg.sender) {        
-        delegated_NotificationSenders[msg.sender][_delegate] = true;
-        emit AddDelegate(msg.sender, _delegate);
-    }
-
-    /// @dev revoke addresses' permission to send notifications on your behalf
-    function removeDelegate(address _delegate) external onlyChannelOwner(msg.sender) {
-        delegated_NotificationSenders[msg.sender][_delegate] = false;
-        emit RemoveDelegate(msg.sender, _delegate);
-    }
-
-    /* @dev to send message to reciepient of a group, the first digit of msg type contains rhe push server flag
-    ** So msg type 1 with using push is 11, without push is 10, in the future this can also be 12 (silent push)
-    */
-    function sendNotification(
-        address _recipient,
-        bytes calldata _identity
-    ) external onlyChannelOwner(msg.sender) {
-        // Just check if the msg is a secret, if so the user public key should be in the system
-        // On second thought, leave it upon the channel, they might have used an alternate way to
-        // encrypt the message using the public key
-
-        // Emit the message out
-        emit SendNotification(msg.sender, _recipient, _identity);
-    }
-
-     /// @dev to send message to reciepient of a group
-    function sendNotificationAsDelegate(
-        address _channel,
-        address _recipient,
-        bytes calldata _identity
-    ) external onlyAllowedDelegates(_channel,msg.sender){
-        // Emit the message out
-        emit SendNotification(_channel, _recipient, _identity);
-    }
-
-
-
+  
     /* ************** 
     
     => DEPOSIT & WITHDRAWAL of FUNDS<=
@@ -1165,6 +1152,133 @@ contract EPNSStagingV4 is Initializable, ReentrancyGuard  {
         channelNewFairShareCount = channelModCount;
         channelNewHistoricalZ = z;
         channelNewLastUpdate = block.number;
+    }
+
+
+    /* ************** 
+    
+    => SEND NOTIFICATION FUNCTIONALITIES <=
+
+    *************** */
+
+    /// @dev allow other addresses to send notifications using your channel
+    function addDelegate(address _delegate)
+        external
+        onlyChannelOwner(msg.sender)
+    {
+        delegated_NotificationSenders[msg.sender][_delegate] = true;
+        emit AddDelegate(msg.sender, _delegate);
+    }
+
+    /// @dev revoke addresses' permission to send notifications on your behalf
+    function removeDelegate(address _delegate)
+        external
+        onlyChannelOwner(msg.sender)
+    {
+        delegated_NotificationSenders[msg.sender][_delegate] = false;
+        emit RemoveDelegate(msg.sender, _delegate);
+    }
+
+
+    /// @dev to send message to reciepient of a group
+    function sendNotificationAsDelegateOrOwnerOrRecipient(
+        address _channel,
+        address _delegate,
+        address _recipient,
+        bytes calldata _identity
+    )
+        public
+        onlyChannelOwnerOrAllowedDelegatesOrSelfRecipients(_channel, _delegate, _recipient)
+    {
+        // Emit the message out
+        emit SendNotification(_channel, _recipient, _identity);
+    }
+
+
+    /***
+      THREE main CALLERS for this function- 
+        1. Channel Owner sends Notif to Recipients
+        2. Delegatee of Channel sends Notif to Recipients
+        3. Recipients sends Notifs to Themselvs via a Channel
+    <------------------------------------------------------------------------------------->
+     
+     * When a CHANNEL OWNER Calls the Function and sends a Notif-> We check "if (channel owner is the caller) and if(Is Channel Valid)",
+
+     * When a Delegatee wants to send Notif to Recipient-> We check "if(delegate is the Caller) and If( Is delegatee Valid)":
+
+     * When Recipient wants to Send a Notif to themselves -> We check that the If(Caller of the function is Recipient himself)
+    
+    */
+
+
+    address public check;
+    /// @dev to send message to reciepient of a group
+    function _sendNotification(
+        address _channel,
+        address _delegate,
+        address _recipient,
+        address _signatory,
+        bytes calldata _identity
+    )
+        private
+        onlyChannelOwnerOrAllowedDelegates(
+            _channel,
+            _delegate,
+            _recipient,
+            _signatory
+        )
+    {
+        check = _signatory;
+        // Emit the message out
+        emit SendNotification(_channel, _recipient, _identity);
+    }
+
+    /// @dev to send message to reciepient of a group via Sig
+
+    function sendNotifBySig(
+        address _channel,
+        address _delegate,
+        address _recipient,
+        bytes calldata _identity,
+        uint256 nonce,
+        uint256 expiry,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external {
+        bytes32 domainSeparator = keccak256(
+            abi.encode(
+                DOMAIN_TYPEHASH,
+                keccak256(bytes(name)),
+                getChainId(),
+                address(this)
+            )
+        );
+        bytes32 structHash = keccak256(
+            abi.encode(
+                SEND_NOTIFICATION_TYPEHASH,
+                _channel,
+                _delegate,
+                _recipient,
+                _identity,
+                nonce,
+                expiry
+            )
+        );
+        bytes32 digest = keccak256(
+            abi.encodePacked("\x19\x01", domainSeparator, structHash)
+        );
+        address signatory = ecrecover(digest, v, r, s);
+        require(signatory != address(0), "Invalid signature");
+        require(nonce == nonces[signatory]++, "Invalid nonce");
+        require(now <= expiry, "Signature expired");
+        _sendNotification(
+            _channel,
+            _delegate,
+            _recipient,
+            signatory,
+            _identity
+        );
     }
 
     function getChainId() internal pure returns (uint) {
